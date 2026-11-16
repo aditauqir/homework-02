@@ -1,3 +1,4 @@
+// Spice #4 Idempotency: atomic runTransaction deduplication
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/message.dart';
 
