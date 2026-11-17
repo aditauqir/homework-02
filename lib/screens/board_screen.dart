@@ -1,16 +1,21 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 import '../models/message.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/board_service.dart';
 
-/// The core message board screen.
+/// Clean Twitter/X-style feed for the Message Board.
 ///
-/// Features a real-time live stream of all messages via `snapshots()`,
-/// full CRUD operations guarded by Firestore security rules,
-/// intentional empty states, and in-app diagnostics for rules enforcement
-/// and idempotency testing.
+/// Features:
+/// - Pure white background with zero bulky cards or colorful boxes.
+/// - Posts separated by subtle 1px hairline dividers.
+/// - Centered title in the AppBar.
+/// - Phosphor Icons throughout the UI.
+/// - Aktiv Grotesk typography.
+/// - Live stream via `snapshots()`.
+/// - Owner-only edit and delete actions.
 class BoardScreen extends StatefulWidget {
   final User user;
   final UserProfile profile;
@@ -38,7 +43,6 @@ class _BoardScreenState extends State<BoardScreen> {
   @override
   void initState() {
     super.initState();
-    // Cache stream once in state to avoid redundant re-subscriptions
     _boardStream = _boardService.messageBoard();
   }
 
@@ -67,7 +71,6 @@ class _BoardScreenState extends State<BoardScreen> {
         idempotencyKey: idempotencyKey,
       );
 
-      // Auto-scroll to bottom after slight delay
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -81,8 +84,8 @@ class _BoardScreenState extends State<BoardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to post message: $e'),
-            backgroundColor: Colors.red[700],
+            content: Text('Failed to post: $e'),
+            backgroundColor: const Color(0xFF0F1419),
           ),
         );
       }
@@ -98,15 +101,40 @@ class _BoardScreenState extends State<BoardScreen> {
     final updated = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit Message'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Edit post',
+          style: TextStyle(
+            fontFamily: 'Aktiv Grotesk',
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Color(0xFF0F1419),
+          ),
+        ),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: editCtrl,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Message Text',
-              border: OutlineInputBorder(),
+            maxLines: 4,
+            style: const TextStyle(
+              fontFamily: 'Aktiv Grotesk',
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF7F9F9),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFEFF3F4)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    const BorderSide(color: Color(0xFF0F1419), width: 1.5),
+              ),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Text cannot be empty' : null,
@@ -115,15 +143,36 @@ class _BoardScreenState extends State<BoardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                color: Color(0xFF536471),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F1419),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 Navigator.pop(ctx, true);
               }
             },
-            child: const Text('Save'),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -135,16 +184,23 @@ class _BoardScreenState extends State<BoardScreen> {
           messageId: message.id,
           newText: editCtrl.text,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message updated successfully.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Post updated.'),
+              backgroundColor: Color(0xFF0F1419),
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Update failed: $e'),
-            backgroundColor: Colors.red[700],
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Update failed: $e'),
+              backgroundColor: const Color(0xFFF4212E),
+            ),
+          );
+        }
       }
     }
     editCtrl.dispose();
@@ -154,22 +210,56 @@ class _BoardScreenState extends State<BoardScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Message'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Delete post?',
+          style: TextStyle(
+            fontFamily: 'Aktiv Grotesk',
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Color(0xFF0F1419),
+          ),
+        ),
         content: const Text(
-          'Are you sure you want to delete this message? This cannot be undone.',
+          'This can’t be undone and it will be removed from the feed.',
+          style: TextStyle(
+            fontFamily: 'Aktiv Grotesk',
+            fontSize: 14,
+            color: Color(0xFF536471),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                color: Color(0xFF536471),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFF4212E),
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -178,16 +268,23 @@ class _BoardScreenState extends State<BoardScreen> {
     if (confirmed == true && mounted) {
       try {
         await _boardService.deleteMessage(messageId: message.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message deleted.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Post deleted.'),
+              backgroundColor: Color(0xFF0F1419),
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Delete failed: $e'),
-            backgroundColor: Colors.red[700],
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Delete failed: $e'),
+              backgroundColor: const Color(0xFFF4212E),
+            ),
+          );
+        }
       }
     }
   }
@@ -196,6 +293,7 @@ class _BoardScreenState extends State<BoardScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -210,38 +308,67 @@ class _BoardScreenState extends State<BoardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B2430),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Message Board Vault',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F1419),
+                letterSpacing: -0.3,
+              ),
             ),
             Text(
               '${widget.profile.fullName} (${widget.profile.role})',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: const TextStyle(
+                fontFamily: 'Aktiv Grotesk',
+                fontSize: 11,
+                color: Color(0xFF536471),
+              ),
             ),
           ],
         ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Divider(
+            height: 1.0,
+            thickness: 0.8,
+            color: Color(0xFFEFF3F4),
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Rules & Idempotency Testing (Spices)',
-            icon: const Icon(Icons.security_outlined, color: Colors.amber),
+            tooltip: 'Rules & Diagnostics',
+            icon: PhosphorIcon(
+              PhosphorIconsRegular.shieldCheck,
+              color: const Color(0xFF0F1419),
+              size: 22,
+            ),
             onPressed: _showDevRulesTestDialog,
           ),
           IconButton(
-            tooltip: 'Sign Out',
-            icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
+            icon: PhosphorIcon(
+              PhosphorIconsRegular.signOut,
+              color: const Color(0xFF0F1419),
+              size: 22,
+            ),
             onPressed: () => _authService.signOut(),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
         children: [
-          // Live Message List
+          // Feed List
           Expanded(
             child: StreamBuilder<List<Message>>(
               stream: _boardStream,
@@ -249,21 +376,34 @@ class _BoardScreenState extends State<BoardScreen> {
                 if (snapshot.hasError) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(28.0),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline,
-                              color: Colors.red, size: 48),
+                          PhosphorIcon(
+                            PhosphorIconsRegular.warningCircle,
+                            color: const Color(0xFFF4212E),
+                            size: 40,
+                          ),
                           const SizedBox(height: 12),
                           const Text(
-                            'Failed to load message stream',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            'Failed to load posts',
+                            style: TextStyle(
+                              fontFamily: 'Aktiv Grotesk',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          Text('${snapshot.error}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 12)),
+                          Text(
+                            '${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Aktiv Grotesk',
+                              fontSize: 12,
+                              color: Color(0xFF536471),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -271,7 +411,17 @@ class _BoardScreenState extends State<BoardScreen> {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFF0F1419)),
+                      ),
+                    ),
+                  );
                 }
 
                 final messages = snapshot.data ?? [];
@@ -282,23 +432,31 @@ class _BoardScreenState extends State<BoardScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.forum_outlined,
-                              size: 64, color: Colors.grey[400]),
+                          PhosphorIcon(
+                            PhosphorIconsRegular.chatTeardropDots,
+                            size: 48,
+                            color: const Color(0xFFCFD9DE),
+                          ),
                           const SizedBox(height: 16),
                           const Text(
-                            'The vault board is quiet.',
+                            'Message Board Vault',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              fontFamily: 'Aktiv Grotesk',
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F1419),
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No messages have been posted yet.\nBe the first to leave a notice on the live stream!',
+                          const SizedBox(height: 6),
+                          const Text(
+                            'The vault is currently quiet. Post the first notice to start the board.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                fontSize: 13, color: Colors.grey[600]),
+                              fontFamily: 'Aktiv Grotesk',
+                              fontSize: 14,
+                              color: Color(0xFF536471),
+                            ),
                           ),
                         ],
                       ),
@@ -306,157 +464,204 @@ class _BoardScreenState extends State<BoardScreen> {
                   );
                 }
 
-                return ListView.builder(
+                return ListView.separated(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
                   itemCount: messages.length,
+                  separatorBuilder: (context, index) => const Divider(
+                    height: 1,
+                    thickness: 0.8,
+                    color: Color(0xFFEFF3F4),
+                  ),
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMyMessage = msg.authorUid == widget.user.uid;
 
-                    return Card(
-                      elevation: 1.5,
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: isMyMessage
-                            ? BorderSide(color: Colors.amber.shade700, width: 1.2)
-                            : BorderSide(color: Colors.grey.shade300),
+                    return Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Author & Date Header
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // User Avatar
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isMyMessage
+                                ? const Color(0xFF0F1419)
+                                : const Color(0xFFE1E8ED),
+                            child: Text(
+                              msg.authorName.isNotEmpty
+                                  ? msg.authorName[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                fontFamily: 'Aktiv Grotesk',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isMyMessage
+                                    ? Colors.white
+                                    : const Color(0xFF0F1419),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Post Content Column
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Header: Name + (YOU badge) ... Time + (edited)
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: isMyMessage
-                                          ? Colors.amber[800]
-                                          : Colors.blueGrey[600],
-                                      child: Text(
-                                        msg.authorName.isNotEmpty
-                                            ? msg.authorName[0].toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
                                     Text(
                                       msg.authorName,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: isMyMessage
-                                            ? Colors.amber[900]
-                                            : Colors.black87,
+                                      style: const TextStyle(
+                                        fontFamily: 'Aktiv Grotesk',
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: Color(0xFF0F1419),
                                       ),
                                     ),
-                                    if (isMyMessage)
+                                    if (isMyMessage) ...[
+                                      const SizedBox(width: 6),
                                       Container(
-                                        margin: const EdgeInsets.only(left: 6),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 6,
-                                          vertical: 2,
+                                          vertical: 1.5,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.amber[100],
+                                          color: const Color(0xFFF0F3F4),
                                           borderRadius:
-                                              BorderRadius.circular(6),
+                                              BorderRadius.circular(4),
                                         ),
                                         child: const Text(
                                           'YOU',
                                           style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.brown,
+                                            fontFamily: 'Aktiv Grotesk',
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF536471),
                                           ),
                                         ),
                                       ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
+                                    ],
+                                    const Spacer(),
                                     Text(
                                       msg.createdAt != null
                                           ? _formatTime(msg.createdAt!)
-                                          : 'Sending...',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[600],
+                                          : 'now',
+                                      style: const TextStyle(
+                                        fontFamily: 'Aktiv Grotesk',
+                                        fontSize: 13,
+                                        color: Color(0xFF536471),
                                       ),
                                     ),
-                                    if (msg.isEdited)
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 4.0),
-                                        child: Text(
-                                          '(edited)',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontStyle: FontStyle.italic,
-                                            color: Colors.grey[500],
+                                    if (msg.isEdited) ...[
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        '(edited)',
+                                        style: TextStyle(
+                                          fontFamily: 'Aktiv Grotesk',
+                                          fontSize: 12,
+                                          fontStyle: FontStyle.italic,
+                                          color: Color(0xFF536471),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+
+                                // Post Body
+                                Text(
+                                  msg.text,
+                                  style: const TextStyle(
+                                    fontFamily: 'Aktiv Grotesk',
+                                    fontSize: 15,
+                                    height: 1.35,
+                                    color: Color(0xFF0F1419),
+                                  ),
+                                ),
+
+                                // Owner Actions (Edit & Delete)
+                                if (isMyMessage) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      InkWell(
+                                        onTap: () => _promptEdit(msg),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 4,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              PhosphorIcon(
+                                                PhosphorIconsRegular
+                                                    .pencilSimpleLine,
+                                                size: 15,
+                                                color:
+                                                    const Color(0xFF536471),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  fontFamily: 'Aktiv Grotesk',
+                                                  fontSize: 13,
+                                                  color: Color(0xFF536471),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Message Text
-                            Text(
-                              msg.text,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                color: Colors.black87,
-                              ),
-                            ),
-
-                            // Owner CRUD Controls
-                            if (isMyMessage) ...[
-                              const Divider(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton.icon(
-                                    style: TextButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      foregroundColor: Colors.blue[700],
-                                    ),
-                                    onPressed: () => _promptEdit(msg),
-                                    icon: const Icon(Icons.edit, size: 16),
-                                    label: const Text('Edit'),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  TextButton.icon(
-                                    style: TextButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      foregroundColor: Colors.red[700],
-                                    ),
-                                    onPressed: () => _confirmDelete(msg),
-                                    icon: const Icon(Icons.delete_outline,
-                                        size: 16),
-                                    label: const Text('Delete'),
+                                      const SizedBox(width: 14),
+                                      InkWell(
+                                        onTap: () => _confirmDelete(msg),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 4,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              PhosphorIcon(
+                                                PhosphorIconsRegular.trash,
+                                                size: 15,
+                                                color:
+                                                    const Color(0xFFF4212E),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  fontFamily: 'Aktiv Grotesk',
+                                                  fontSize: 13,
+                                                  color: Color(0xFFF4212E),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
-                              ),
-                            ],
-                          ],
-                        ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -465,57 +670,86 @@ class _BoardScreenState extends State<BoardScreen> {
             ),
           ),
 
-          // Composer Toolbar
+          // Flat Twitter-inspired bottom composer
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  offset: const Offset(0, -2),
-                  blurRadius: 4,
-                ),
-              ],
+              border: Border(
+                top: BorderSide(color: Color(0xFFEFF3F4), width: 1.0),
+              ),
             ),
             child: SafeArea(
               child: Row(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _composerCtrl,
-                      decoration: InputDecoration(
-                        hintText: 'Post a notice to the vault board...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
-                        ),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color(0xFF0F1419),
+                    child: Text(
+                      widget.profile.fullName.isNotEmpty
+                          ? widget.profile.fullName[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(
+                        fontFamily: 'Aktiv Grotesk',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      onSubmitted: (_) => _postMessage(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7F9F9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFEFF3F4)),
+                      ),
+                      child: TextField(
+                        controller: _composerCtrl,
+                        style: const TextStyle(
+                          fontFamily: 'Aktiv Grotesk',
+                          fontSize: 14,
+                          color: Color(0xFF0F1419),
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Post a notice to the vault board...',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Aktiv Grotesk',
+                            color: Color(0xFF536471),
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onSubmitted: (_) => _postMessage(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.amber[800],
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.all(12),
-                    ),
-                    onPressed: _isPosting ? null : _postMessage,
+                    tooltip: 'Send Notice',
                     icon: _isPosting
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.black,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF0F1419)),
                             ),
                           )
-                        : const Icon(Icons.send_rounded),
+                        : PhosphorIcon(
+                            PhosphorIconsBold.paperPlaneRight,
+                            color: const Color(0xFF0F1419),
+                            size: 20,
+                          ),
+                    onPressed: _isPosting ? null : _postMessage,
                   ),
                 ],
               ),
@@ -534,7 +768,7 @@ class _BoardScreenState extends State<BoardScreen> {
   }
 }
 
-/// In-App Diagnostics Bottom Sheet for Live Rule Denial & Idempotency Testing.
+/// Minimalist Twitter-style Diagnostics Bottom Sheet.
 class _RulesDiagnosticsSheet extends StatefulWidget {
   final BoardService boardService;
   final String currentUid;
@@ -615,7 +849,6 @@ class _RulesDiagnosticsSheetState extends State<_RulesDiagnosticsSheet> {
     final testKey = 'test_nonce_${DateTime.now().millisecondsSinceEpoch}';
 
     try {
-      // Fire two identical writes concurrently with identical idempotencyKey
       final results = await Future.wait([
         widget.boardService.postMessageIdempotent(
           authorUid: widget.currentUid,
@@ -652,55 +885,84 @@ class _RulesDiagnosticsSheetState extends State<_RulesDiagnosticsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      color: Colors.white,
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
         top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            children: const [
-              Icon(Icons.terminal, color: Colors.amber),
-              SizedBox(width: 8),
-              Text(
-                'Security Rules & Spice Diagnostics',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            children: [
+              PhosphorIcon(
+                PhosphorIconsRegular.shieldCheck,
+                color: const Color(0xFF0F1419),
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Security Rules & Spices',
+                style: TextStyle(
+                  fontFamily: 'Aktiv Grotesk',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F1419),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Text(
-            'Current User: ${widget.currentName} (${widget.currentUid})',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            'UID: ${widget.currentUid}',
+            style: const TextStyle(
+              fontFamily: 'Aktiv Grotesk',
+              fontSize: 12,
+              color: Color(0xFF536471),
+            ),
           ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              OutlinedButton.icon(
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F1419),
+                  side: const BorderSide(color: Color(0xFFCFD9DE)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
                 onPressed: _running ? null : _testForgedCreate,
-                icon: const Icon(Icons.shield_outlined, size: 16),
-                label: const Text('Probe Forged Create'),
+                child: const Text('Probe Forged Create'),
               ),
-              OutlinedButton.icon(
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F1419),
+                  side: const BorderSide(color: Color(0xFFCFD9DE)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
                 onPressed: _running ? null : _testCrossUidEdit,
-                icon: const Icon(Icons.block, size: 16),
-                label: const Text('Probe Cross-UID Edit'),
+                child: const Text('Probe Cross-UID Edit'),
               ),
-              ElevatedButton.icon(
+              ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[800],
-                  foregroundColor: Colors.black,
+                  backgroundColor: const Color(0xFF0F1419),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _running ? null : _testIdempotentDoubleSubmit,
-                icon: const Icon(Icons.auto_fix_high, size: 16),
-                label: const Text('Test Double Submit (Spice #4)'),
+                child: const Text('Test Double Submit (Spice 4)'),
               ),
             ],
           ),
@@ -708,15 +970,16 @@ class _RulesDiagnosticsSheetState extends State<_RulesDiagnosticsSheet> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1B2430),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFFF7F9F9),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFEFF3F4)),
             ),
             child: SelectableText(
               _logOutput,
               style: const TextStyle(
-                fontFamily: 'monospace',
+                fontFamily: 'Courier New',
                 fontSize: 12,
-                color: Colors.greenAccent,
+                color: Color(0xFF0F1419),
               ),
             ),
           ),
