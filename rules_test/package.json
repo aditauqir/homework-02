@@ -1,0 +1,13 @@
+{
+  "name": "rules_test",
+  "version": "1.0.0",
+  "description": "Rules unit testing suite for Homework 02",
+  "main": "test_rules.js",
+  "scripts": {
+    "test": "mocha test_rules.js"
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "mocha": "^11.1.0"
+  }
+}
