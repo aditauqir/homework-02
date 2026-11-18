@@ -3,7 +3,8 @@
 **Name:** Adi Tauqir (Undergraduate)  
 **Course:** CSC 4360 - Mobile Application Development  
 **Repository:** https://github.com/aditauqir/homework-02.git  
-**Release APK:** `HW02_AdiTauqir.apk` (Root directory & `build/app/outputs/flutter-apk/app-release.apk`)
+**Release APK:** [Download HW02_AdiTauqir.apk (GitHub Release v1.0.0)](https://github.com/aditauqir/homework-02/releases/download/v1.0.0/HW02_AdiTauqir.apk)  
+**Local File Path:** `build/app/outputs/flutter-apk/app-release.apk` (and root `HW02_AdiTauqir.apk`)
 
 ---
 
@@ -93,7 +94,8 @@ This app implements the complete Firebase message board architecture required by
 | **`t04_auth_register_screen.png`** | Registration form capturing First Name, Last Name, Role, and credentials. | <img src="screenshots/t04_auth_register_screen.png" width="220" alt="Register Screen" /> |
 | **`t06_board_empty_state.png`** | Intentional empty vault board state prior to posting notices. | <img src="screenshots/t06_board_empty_state.png" width="220" alt="Empty Board" /> |
 | **`t07_board_live_stream.png`** | Real-time live board displaying timestamped messages via `snapshots()`. | <img src="screenshots/t07_board_live_stream.png" width="220" alt="Live Board" /> |
-| **`t07_multi_user_stream_proof.png`** | Cross-user stream view: own posts have edit/delete; foreign posts protected. | <img src="screenshots/t07_multi_user_stream_proof.png" width="220" alt="Cross User Proof" /> |
+| **`t05_cross_user_board_view.png`** | Cross-user view: foreign notices displayed live with Edit/Delete buttons hidden. | <img src="screenshots/t05_cross_user_board_view.png" width="220" alt="Cross User View" /> |
+| **`t07_multi_user_stream_proof.png`** | Multi-user stream proof: own posts have edit/delete; foreign posts protected. | <img src="screenshots/t07_multi_user_stream_proof.png" width="220" alt="Cross User Proof" /> |
 | **`t08_edit_dialog.png`** | Message Edit dialog with pre-filled text and validation. | <img src="screenshots/t08_edit_dialog.png" width="220" alt="Edit Dialog" /> |
 | **`t08_message_updated.png`** | Updated message rendering live with `(edited)` tag and new timestamp. | <img src="screenshots/t08_message_updated.png" width="220" alt="Message Updated" /> |
 | **`t09_delete_dialog.png`** | Confirmation dialog preventing accidental document deletions. | <img src="screenshots/t09_delete_dialog.png" width="220" alt="Delete Dialog" /> |
